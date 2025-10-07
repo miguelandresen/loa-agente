@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agente LOA – Demo Offline (sin créditos)</title>
+  <style>
+    :root{--bg:#0b0f1a;--fg:#eef2f7;--muted:#90a3b6;--acc:#49a6ff}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif}
+    .wrap{max-width:900px;margin:0 auto;padding:24px}
+    h1{margin:0 0 .25rem;font-size:1.6rem}
+    .muted{color:var(--muted)}
+    .panel{background:#0f1524;border:1px solid #1b2845;border-radius:12px;padding:16px;margin:16px 0}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button{background:var(--acc);color:#001b2b;border:0;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
+    button[disabled]{opacity:.5;cursor:not-allowed}
+    input[type="text"]{flex:1;min-width:260px;background:#0b1324;color:var(--fg);border:1px solid #1b2845;border-radius:10px;padding:10px}
+    .log{max-height:340px;overflow:auto;padding:8px 0}
+    .bubble{padding:10px 12px;border-radius:10px;margin:8px 0;max-width:100%}
+    .me{background:#15223c}
+    .bot{background:#0f1d33}
+    .small{font-size:.9rem}
+    code.k{background:#10192e;padding:2px 6px;border-radius:6px}
+    .footer{font-size:.85rem;color:var(--muted);margin-top:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Agente Conversacional LOA – Demo sin créditos</h1>
+    <div class="muted">Funciona 100% en el navegador (voz o texto). Ideal para demo cuando el widget de Scoreapps no tiene créditos.</div>
+
+    <div class="panel">
+      <div class="row">
+        <button id="btnMic">🎙️ Empezar a hablar</button>
+        <button id="btnStop" disabled>Detener</button>
+        <input id="text" type="text" placeholder="Escribe o pulsa el micrófono…">
+        <button id="btnSend">Enviar</button>
+      </div>
+      <div class="log" id="log"></div>
+      <div class="footer">Privacidad: todo se procesa localmente en tu navegador. Requiere <b>HTTPS</b> para usar micrófono.</div>
+    </div>
+
+    <div class="panel small">
+      <b>Ejemplos:</b>
+      <div><code class="k">hola</code> · <code class="k">qué es LOA</code> · <code class="k">progresivas disponibles</code> · <code class="k">ocupacionales</code> · <code class="k">filtros terapéuticos</code> · <code class="k">miochild</code> · <code class="k">tratamientos</code> · <code class="k">plazos</code> · <code class="k">tarifa</code> · <code class="k">contacto</code></div>
+    </div>
+  </div>
+
+<script>
+const KB = [
+  {k:["hola","buenas","saludo"], a:"Hola, soy el asistente de LOA (laboratorio de lentes). ¿Recomendar lente, garantías/plazos, seguimiento demo o Comercial LOA?"},
+  {k:["qué es loa","quien es loa","quién es loa","loa es"], a:"LOA es un laboratorio de lentes para ópticas, fundado en 2012 en Sevilla. No vendemos al público final."},
+  {k:["historia","fundación","fundacion"], a:"Fundada en 2012 por ópticos en Sevilla; primer laboratorio fabricante de lentes en Andalucía. 10º aniversario en 2023; presencia nacional."},
+  {k:["contacto","dirección","direccion","teléfono","telefono","correo","email"], a:"Dirección: C/ Charles Darwin, 17, Pol. El Cáñamo II, 41309 La Rinconada (Sevilla). Tel: 955 515 251. Web: www.lentesloa.es. Pedidos: pedidos@lentesloa.com"},
+  {k:["catálogo","catalogo","gamas","portafolio"], a:"Catálogo: monofocales (Acomoda+), progresivas Elynxe (Revolution Plus/Elite Plus/Expert Plus), ocupacionales Infinito, bifocales/trifocales, Neochromes, MioChild, filtros terapéuticos, sol/polarizadas/espejadas."},
+  {k:["monofocal"], a:"Monofocales para lejos/cerca y Acomoda+ (relajantes). AR premium recomendado; para pantallas intensivas, añadir filtro selectivo."},
+  {k:["progresiva","progresivas","elynxe"], a:"Progresivas Free‑Form Elynxe: Revolution Plus, Elite Plus, Expert Plus. Elegimos por graduación/uso. En pantallas y conducción: estabilidad + AR premium."},
+  {k:["ocupacional","ocupacionales","oficina","pantallas"], a:"Ocupacionales Infinito: optimizadas para intermedia y cerca (oficina/pantallas). AR premium + filtro selectivo = mayor confort."},
+  {k:["fotocromática","fotocromatica","neochromes"], a:"Neochromes: activación/oscurecimiento automáticos; combinar con AR premium y, si procede, filtro selectivo."},
+  {k:["miochild","miopía","miopia","infantil"], a:"MioChild: control de miopía infantil por desenfoque periférico; uso diario y apoyo formativo a familias."},
+  {k:["filtro terapéutico","filtros terapéuticos","patología","patologia"], a:"Filtros terapéuticos específicos por patología. Valorar caso clínico y uso; asesoramiento técnico LOA disponible."},
+  {k:["tratamiento","tratamientos","ar","antirreflejante","filtro azul"], a:"Tratamientos: Endurecido antirrayado; ARTOP (estándar/avanzado); ARTOP Blue (filtro azul)."},
+  {k:["evolens"], a:"Evolens: más valor sin complicaciones. Materiales de apoyo, demo en tablet y medición; precio competitivo por debajo de la mediana."},
+  {k:["premia","prem ia","prem-ia"], a:"PremIA: hiperpersonalización con IA (>100k usuarios) y garantía de adaptación 60 días (ajustes sin coste)."},
+  {k:["garantía","garantia","garantías","garantias"], a:"Garantía de fabricación y de adaptación por familia/nível. Si hay disconfort: revisar graduación y centrados; soporte técnico LOA si persiste."},
+  {k:["plazo","plazos","entrega"], a:"Plazo orientativo de fabricación 3–7 días hábiles (según diseño y tratamientos). ETA concreta al cursar la orden."},
+  {k:["precio","precios","tarifa","fabricación","fabricacion"], a:"LOA es laboratorio: no damos precios de gafas completas. Tarifa de lentes solo a ópticas vía Departamento Comercial: puedo pedir llamada o enviar por email/WhatsApp."},
+  {k:["seguimiento","demo","estado"], a:"Seguimiento DEMO‑####: en fabricación; control de calidad 24–48 h; ETA 3 días hábiles."},
+];
+
+function matchIntent(text){
+  const q = text.toLowerCase();
+  for (const item of KB){
+    if (item.k.some(key => q.includes(key))) return item.a;
+  }
+  return "Puedo ayudarte con recomendación de lente, garantías/plazos, seguimiento demo o contactar con Comercial LOA. ¿Qué necesitas?";
+}
+
+const log = document.getElementById('log');
+function addBubble(text, who='bot'){
+  const div = document.createElement('div');
+  div.className = `bubble ${who==='me'?'me':'bot'}`;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function speak(text){
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'es-ES';
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+function handleQuery(q){
+  if(!q) return;
+  addBubble(q,'me');
+  const a = matchIntent(q);
+  addBubble(a,'bot');
+  speak(a);
+}
+
+document.getElementById('btnSend').onclick = ()=>{
+  const q = document.getElementById('text').value.trim();
+  document.getElementById('text').value='';
+  handleQuery(q);
+};
+
+let rec, listening=false;
+const btnMic = document.getElementById('btnMic');
+const btnStop = document.getElementById('btnStop');
+
+function startRec(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ alert("Tu navegador no soporta reconocimiento de voz. Usa el cuadro de texto."); return; }
+  rec = new SR();
+  rec.lang = 'es-ES';
+  rec.interimResults = false;
+  rec.onresult = (e)=>{
+    const q = Array.from(e.results).map(r=>r[0].transcript).join(' ');
+    handleQuery(q);
+  };
+  rec.onend = ()=>{ if(listening){ rec.start(); } };
+  rec.start();
+  listening=true; btnMic.disabled=true; btnStop.disabled=false;
+}
+
+function stopRec(){
+  if(rec){ listening=false; rec.stop(); }
+  btnMic.disabled=false; btnStop.disabled=true;
+}
+
+btnMic.onclick = startRec;
+btnStop.onclick = stopRec;
+</script>
+</body>
+</html>
